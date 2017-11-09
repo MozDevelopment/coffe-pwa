@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { Coffe } from "../logic/Coffe";
 import { GeolocationService } from "../geolocation.service";
-import { TastingRating } from "../logic/TastingRating"
+import { TastingRating } from "../logic/TastingRating";
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'app-coffe',
@@ -12,10 +13,14 @@ import { TastingRating } from "../logic/TastingRating"
 export class CoffeComponent implements OnInit {
 
   coffe: Coffe;
+  tastingEnabled: Boolean
   types = ["Expresso", "Rsitretto", "Americano", "Cappucino", "Frape"];
 
+
   constructor(private route: ActivatedRoute,
-              private geolocation: GeolocationService) { }
+              private geolocation: GeolocationService,
+              private router: Router,
+              private data: DataService) { }
 
   routingSubscription: any;
 
@@ -28,21 +33,31 @@ export class CoffeComponent implements OnInit {
   }
 
   cancel() {
-
+    this.router.navigate(['/']);
   }
 
   save() {
-    
+    this.data.save(this.coffe, result => {
+      if(result ){
+        this.router.navigate(["/"]);
+      }
+    });
   }
 
   ngOnInit() {
     this.coffe = new Coffe();
     this.routingSubscription = this.route.params.subscribe(params => {
-        console.log(params["id"]);
+          if(params['id']) {
+            this.data.get(params['id'], response => {
+              this.coffe = response;
+              if(this.coffe.tastingRating)
+                this.tastingEnabled = true;
+            });
+          }
+
       });
 
     this.geolocation.requestLocation(location => {
-      console.log(location);
       if(location) {
         this.coffe.location.latitude = location.latitude;
         this.coffe.location.longitude = location.longitude;
